@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
-
+import time
+import random
 
 url = 'https://www.chitai-gorod.ru/catalog/books'
 # columns: title, author, price, status, link
@@ -13,13 +14,14 @@ HEADERS = {
     'Connection': 'keep-alive',
     'Sec-Ch-Ua': '"Not;A=Brand";v="99", "Chromium";v="128", "Google Chrome";v="128"',
     'Sec-Ch-Ua-Mobile': '?0',
-    'Sec-Ch-Ua-Platform': '"Windows"',
+    'Sec-Ch-Ua-Platform': '"Windows"'
 }
 
 
-def get_html(url: str):
+def get_html(url: str, params=None) -> str:
+    '''Делает запрос к странице и возвращает HTML.'''
     try:
-        response = requests.get(url, headers=HEADERS, timeout=15)
+        response = requests.get(url, headers=HEADERS, params=params, timeout=15)
 
         if response.status_code == 200:
             HTML = response.text
@@ -32,23 +34,49 @@ def get_html(url: str):
         print(f'Возникла сетевая ошибка при запросе к {url}: {error}')
         return None
 
-html = get_html(url)
-soup = BeautifulSoup(html, 'html.parser')
 
-book_cards = soup.find('div', class_='product-card__content')
+def parse_books(html: str) -> None:
+    '''Собирает необходимые данные со страницы.'''
+    soup = BeautifulSoup(html, 'html.parser')
 
-title = book_cards.find('a', class_='product-card__title').text
-author = book_cards.find('span', class_='product-card__subtitle').text
-price = book_cards.find('span', class_='product-mini-card-price__price product-mini-card-price__price--reverse').text
+    book_cards = soup.find_all('div', class_='product-card__content')
 
-status = book_cards.find('div', class_='chg-app-button__content').text
-if status.lower in ['купить', 'оформить']:
-    status = 'В наличии'
+    book_list = []
 
-link_tag = book_cards.find('a', class_='product-card__title')
-link = f"https://www.chitai-gorod.ru{link_tag['href']}" if link_tag else 'Без ссылки'
+    for book in book_cards:
+        title_tag = book.find('a', class_='product-card__title')
+        title = title_tag.text if title_tag else 'Отсутствует'
 
-try:
-    print(f'{title} | {author} | {price} | {status} | {link}')
-except:
-    print('Ошибка.')
+        author_tag = book.find('span', class_='product-card__subtitle')
+        author = author_tag.text if author_tag else 'Отсутствует'
+
+        price_tag = book.find('span', class_='product-mini-card-price__price product-mini-card-price__price--reverse')
+        price = price_tag.text if price_tag else 'Отсутствует'
+
+        status_tag = book.find('div', class_='chg-app-button__content')
+        status = status_tag.text.strip() if status_tag else 'Отсутствует'
+        if status.lower() in ['купить', 'оформить']:
+            status = 'В наличии'
+        if status.lower() in ['предзаказ']:
+            status = 'Нет в наличии, возможен предзаказ'
+
+        link_tag = book.find('a', class_='product-card__title')
+        link = f"https://www.chitai-gorod.ru{link_tag['href']}" if link_tag else 'Без ссылки'
+
+        print(f'{title} | {author} | {price} | {status} | {link}')
+
+
+def main():
+    '''Главный работник программы, выполняет все процессы.'''
+    for page in range(1, 3):
+        params = {'page': page}
+
+        html = get_html(url, params)
+        parse_books(html)
+
+        delay = random.uniform(2, 2.5)
+        time.sleep(delay)
+
+
+if __name__ == '__main__':
+    main()
