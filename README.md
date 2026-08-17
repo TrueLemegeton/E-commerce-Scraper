@@ -11,14 +11,16 @@
 - Сбор цены
 - Сбор статуса товара
 - Сбор ссылки на товар
-- Парсинг нескольких страницы каталога
+- Парсинг нескольких страниц каталога
 - Задержка между запросами
+- Cохранение в XLSX
 
 ## Technologies
 
 - Python
 - Requests
 - BeautifulSoup
+- openpyxl
 
 ## Installation
 
@@ -62,10 +64,10 @@ python src/main.py
 
 ## Output
 
-Сейчас данные выводятся в консоль в формате:
+После запуска файл сохраняется в:
 
 ```text
-Если все кошки в мире исчезнут (покет) | Гэнки Кавамура | 389 ₽ |  Купить | https://www.chitai-gorod.ru/product/esli-vse-koshki-v-mire-ischeznut-poket-2968841
+output/Книги.xlsx
 ```
 
 
@@ -75,6 +77,7 @@ python src/main.py
 e-commerce-scraper/
 ├── src/
 │   └── main.py
+├── output/
 ├── .gitignore
 ├── README.md
 └── requirements.txt
