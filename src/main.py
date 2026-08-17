@@ -2,6 +2,9 @@ import requests
 from bs4 import BeautifulSoup
 import time
 import random
+from openpyxl import Workbook
+
+from pathlib import Path
 
 url = 'https://www.chitai-gorod.ru/catalog/books'
 # columns: title, author, price, status, link
@@ -35,7 +38,7 @@ def get_html(url: str, params=None) -> str:
         return None
 
 
-def parse_books(html: str) -> None:
+def parse_books(html: str) -> list[list]:
     '''Собирает необходимые данные со страницы.'''
     soup = BeautifulSoup(html, 'html.parser')
 
@@ -59,23 +62,57 @@ def parse_books(html: str) -> None:
             status = 'В наличии'
         if status.lower() in ['предзаказ']:
             status = 'Нет в наличии, возможен предзаказ'
+        if 'забрать' in status.lower():
+            status = 'Забрать из магазина'
 
         link_tag = book.find('a', class_='product-card__title')
         link = f"https://www.chitai-gorod.ru{link_tag['href']}" if link_tag else 'Без ссылки'
 
-        print(f'{title} | {author} | {price} | {status} | {link}')
+        book_list.append([title,
+                          author,
+                          price,
+                          status,
+                          link
+        ])
+
+    return book_list
+
+
+def save_to_excel(books: list[list]):
+    """Создает документ .xlsx и сохраняет туда информацию о книгах."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Книги'
+
+    headers = ['Название', 'Автор', 'Цена', 'Статус', 'Ссылка']
+    ws.append(headers)
+
+    for book in books:
+        ws.append(book)
+
+    BASE_DIR = Path(__file__).resolve().parent.parent
+    output_path = BASE_DIR / 'output' / 'Книги.xlsx'
+    wb.save(output_path)
+
+    print('Сохранение прошло успешно!')
+
 
 
 def main():
     '''Главный работник программы, выполняет все процессы.'''
+    all_books = []
+
     for page in range(1, 3):
         params = {'page': page}
 
         html = get_html(url, params)
-        parse_books(html)
+        books = parse_books(html)
+        all_books.extend(books)
 
         delay = random.uniform(2, 2.5)
         time.sleep(delay)
+
+    save_to_excel(all_books)
 
 
 if __name__ == '__main__':
